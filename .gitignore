@@ -1,0 +1,40 @@
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Build products and generated previews
+Build/
+build/
+artifacts/
+
+# Runtime state
+data/
+candidate-data/
+
+# Local agent context
+.agents/
+.codex/
+AGENTS.md
+sources/
+
+# Configuration, credentials, and logs
+.env
+.env.*
+!.env.example
+*.log
+*.har
+*.db
+*.sqlite*
+*.pem
+*.key
+*.p12

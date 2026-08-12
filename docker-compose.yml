@@ -1,0 +1,35 @@
+name: f1-quote0
+
+services:
+  f1-quote0:
+    build:
+      context: .
+    image: f1-quote0-docker:latest
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      ASSET_DIR: /app/assets
+      STATE_PATH: /data/status.json
+      F1_DASHBOARD: ${F1_DASHBOARD:-}
+      F1_DASHBOARDS: ${F1_DASHBOARDS:-latestAllSession,nextSession}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - f1-quote0-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-m", "f1_quote0", "--healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+volumes:
+  f1-quote0-data:

@@ -1,0 +1,12 @@
+.git
+.github
+service/tests
+scripts
+.env
+.env.*
+!.env.example
+data
+artifacts
+*.log
+__pycache__
+*.py[cod]
