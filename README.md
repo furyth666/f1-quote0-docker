@@ -8,6 +8,7 @@
 
 - 支持比赛结果、下一场比赛、倒数日、车手积分和车队积分等 11 种看板。
 - 可固定显示单一看板，也可按指定顺序轮播。
+- 手机轻碰 Quote/0 的 NFC 区域时，可从当前 F1 画面打开手机端 F1 Dashboard。
 - 从设备 Loop 自动发现 Canvas API 条目，无需手动复制任务 Key。
 - 使用 Noto Sans CJK、4 倍超采样和 Lanczos 缩放改善小字号可读性。
 - 文字、数字、边框和分隔线使用硬阈值二值化，避免误差扩散在竖直笔画上制造毛刺。
@@ -90,6 +91,18 @@ PUSH_INTERVAL_SECONDS=300
 
 车手或车队 ID 为空、无法匹配时，服务会选择当前积分榜领先者。未知 Dashboard 名称和重复项会被忽略；如果最终没有有效项目，则回退到 `latestAllSession,nextSession`。
 
+## NFC 打开 F1 Dashboard
+
+F1 Canvas 载荷默认包含手机端 Dashboard 链接：
+
+```dotenv
+F1_NFC_LINK=https://www.formula1.com/en/timing/f1-live
+```
+
+当 F1 看板是 Quote/0 当前显示内容时，用支持 NFC 的手机轻碰设备右侧空白区域，Dot.App 或 iOS App Clip 会读取当前内容并打开该链接。NFC 标签本身仍是 Quote/0 的固定入口，不会被改写。
+
+如需换成其他网页或 App URL Scheme，修改 `F1_NFC_LINK`；将它留空即可让 F1 Canvas 不携带跳转链接。默认目标由 Formula 1 官方提供，服务只把地址写入 Dot Canvas API 的 `link` 字段。
+
 可直接从镜像查询支持的名称：
 
 ```sh
@@ -104,6 +117,8 @@ docker compose run --rm f1-quote0 --list-dashboards
 | `QUOTE0_DEVICE_ID` | 空 | Quote/0 设备 ID，必填 |
 | `CANVAS_TASK_KEY` | 自动发现 | 可选的 Canvas 任务 Key |
 | `CANVAS_TASK_ALIAS` | `F1 看板` | Canvas 内容名称 |
+| `CANVAS_REFRESH_NOW` | `false` | 推送后是否立即切换到 F1 画面；建议保持 `false`，避免打断 Loop 中的其他看板 |
+| `F1_NFC_LINK` | `https://www.formula1.com/en/timing/f1-live` | NFC 触碰当前 F1 Canvas 后打开的官方 Live Timing；留空关闭 |
 | `F1_DASHBOARD` | 空 | 单一看板名称，或 `all` |
 | `F1_DASHBOARDS` | `latestAllSession,nextSession` | 自定义轮播列表 |
 | `F1_DRIVER_ID` | 自动选择 | 车手看板使用的 OpenF1/Jolpica ID |
@@ -113,7 +128,9 @@ docker compose run --rm f1-quote0 --list-dashboards
 | `LIVE_REFRESH_SECONDS` | `15` | 比赛进行中的数据刷新间隔，最小 15 秒 |
 | `TZ` | `UTC` | IANA 时区，例如 `Asia/Hong_Kong` |
 
-每次成功调用 Canvas API 都可能触发电子墨水屏刷新，即使画面内容与上一次相同。固定显示单一看板时，可以适当提高 `PUSH_INTERVAL_SECONDS`；轮播多个看板时，该值同时决定切换速度。
+默认的 `CANVAS_REFRESH_NOW=false` 会更新 Loop 中的 F1 Canvas 内容，但不会要求设备立即跳转到它，因此定时推送不会主动顶掉当前显示的其他看板。设为 `true` 时，每次推送都会请求设备立即显示 F1 看板。
+
+无论该值为何，服务仍会按 `PUSH_INTERVAL_SECONDS` 调用 Canvas API；`false` 控制的是是否立即切换屏幕，并不是停止后台内容更新。固定单一看板时可以适当提高推送间隔；轮播多个 F1 看板时，该值同时决定 F1 内容的更新速度。
 
 ## 可选代理
 

@@ -19,7 +19,13 @@ def main() -> int:
     data.refresh(config.driver_id, config.constructor_id)
     renderer = CanvasRenderer()
     for name in DASHBOARDS:
-        payload = renderer.payload(data.dashboard(name), "validation", "F1 看板")
+        payload = renderer.payload(
+            data.dashboard(name),
+            "validation",
+            "F1 看板",
+            config.nfc_link,
+            config.refresh_now,
+        )
         encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         image_count = 0
 

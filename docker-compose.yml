@@ -12,6 +12,7 @@ services:
     environment:
       ASSET_DIR: /app/assets
       STATE_PATH: /data/status.json
+      CANVAS_REFRESH_NOW: ${CANVAS_REFRESH_NOW:-false}
       F1_DASHBOARD: ${F1_DASHBOARD:-}
       F1_DASHBOARDS: ${F1_DASHBOARDS:-latestAllSession,nextSession}
       TZ: ${TZ:-UTC}

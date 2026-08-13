@@ -11,7 +11,7 @@ from unittest.mock import patch
 from PIL import Image
 
 from f1_quote0.canvas import CanvasClient, CanvasContractError, CanvasRenderer, Assets
-from f1_quote0.config import Config, DASHBOARDS
+from f1_quote0.config import Config, DASHBOARDS, DEFAULT_NFC_LINK
 from f1_quote0.f1 import F1Data, competition_family, same_person, track_asset
 from f1_quote0 import raster
 
@@ -60,6 +60,16 @@ class ConfigTests(unittest.TestCase):
             "F1_DASHBOARDS": "countdown,latestAllSession,countdown,bad,nextSession",
         })
         self.assertEqual(config.dashboards, ("countdown", "latestAllSession", "nextSession"))
+
+    def test_nfc_link_defaults_to_official_f1_live_timing_and_can_be_disabled(self) -> None:
+        self.assertEqual(Config.from_env({}).nfc_link, DEFAULT_NFC_LINK)
+        self.assertEqual(Config.from_env({"F1_NFC_LINK": ""}).nfc_link, "")
+
+    def test_canvas_refresh_now_defaults_false_and_parses_explicit_values(self) -> None:
+        self.assertFalse(Config.from_env({}).refresh_now)
+        self.assertTrue(Config.from_env({"CANVAS_REFRESH_NOW": "true"}).refresh_now)
+        self.assertFalse(Config.from_env({"CANVAS_REFRESH_NOW": "false"}).refresh_now)
+        self.assertFalse(Config.from_env({"CANVAS_REFRESH_NOW": "unexpected"}).refresh_now)
 
 
 class F1LogicTests(unittest.TestCase):
@@ -177,6 +187,30 @@ class CanvasTests(unittest.TestCase):
             encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self.assertLess(len(encoded), 128 * 1024)
             self.assertEqual(payload["taskKey"], "canvas")
+            self.assertIs(payload["refreshNow"], False)
+
+    def test_payload_can_request_immediate_canvas_refresh(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            renderer = CanvasRenderer(Assets(directory))
+            payload = renderer.payload(sample_dashboard(), "canvas", "F1 看板", "", True)
+            self.assertIs(payload["refreshNow"], True)
+
+    def test_payload_sets_nfc_redirect_link(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            renderer = CanvasRenderer(Assets(directory))
+            payload = renderer.payload(
+                sample_dashboard(),
+                "canvas",
+                "F1 看板",
+                "https://www.formula1.com/en/timing/f1-live",
+            )
+            self.assertEqual(payload["link"], "https://www.formula1.com/en/timing/f1-live")
+
+    def test_payload_omits_nfc_redirect_when_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            renderer = CanvasRenderer(Assets(directory))
+            payload = renderer.payload(sample_dashboard(), "canvas", "F1 看板", "")
+            self.assertNotIn("link", payload)
 
     def test_contract_rejects_oversized_text(self) -> None:
         dashboard = sample_dashboard()

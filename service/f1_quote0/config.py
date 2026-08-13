@@ -4,6 +4,9 @@ import os
 from dataclasses import dataclass
 
 
+DEFAULT_NFC_LINK = "https://www.formula1.com/en/timing/f1-live"
+
+
 DASHBOARDS = (
     "latestAllSession",
     "latestRaceOrSprint",
@@ -54,12 +57,25 @@ def _interval(value: str | None, default: int, minimum: int) -> int:
     return max(parsed, minimum)
 
 
+def _boolean(value: str | None, default: bool) -> bool:
+    if value is None or not value.strip():
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 @dataclass(frozen=True, slots=True)
 class Config:
     api_key: str
     device_id: str
     task_key: str
     task_alias: str
+    refresh_now: bool
+    nfc_link: str
     driver_id: str
     constructor_id: str
     dashboards: tuple[str, ...]
@@ -80,6 +96,8 @@ class Config:
             device_id=env.get("QUOTE0_DEVICE_ID", "").strip(),
             task_key=env.get("CANVAS_TASK_KEY", "").strip(),
             task_alias=env.get("CANVAS_TASK_ALIAS", "F1 看板").strip() or "F1 看板",
+            refresh_now=_boolean(env.get("CANVAS_REFRESH_NOW"), False),
+            nfc_link=env.get("F1_NFC_LINK", DEFAULT_NFC_LINK).strip(),
             driver_id=env.get("F1_DRIVER_ID", "").strip(),
             constructor_id=env.get("F1_CONSTRUCTOR_ID", "").strip(),
             dashboards=_dashboards(env),

@@ -90,11 +90,18 @@ class CanvasRenderer:
         self.assets = assets or Assets()
         self.raster = DashboardRasterRenderer(self.assets)
 
-    def payload(self, dashboard: dict[str, Any], task_key: str, task_alias: str) -> dict[str, Any]:
+    def payload(
+        self,
+        dashboard: dict[str, Any],
+        task_key: str,
+        task_alias: str,
+        nfc_link: str = "",
+        refresh_now: bool = False,
+    ) -> dict[str, Any]:
         self._validate_dashboard_strings(dashboard)
         root = self._raster_root(dashboard)
         value: dict[str, Any] = {
-            "refreshNow": True,
+            "refreshNow": refresh_now,
             "taskAlias": task_alias or "F1 看板",
             "windowData": {"default": [root]},
             "layoutFull": {"tw": "p-0"},
@@ -102,6 +109,8 @@ class CanvasRenderer:
         }
         if task_key:
             value["taskKey"] = task_key
+        if nfc_link:
+            value["link"] = nfc_link
         self.validate(value)
         return value
 
@@ -133,8 +142,19 @@ class CanvasRenderer:
                 self._validate_dashboard_strings(key)
                 self._validate_dashboard_strings(child)
 
-    def encoded(self, dashboard: dict[str, Any], task_key: str, task_alias: str) -> bytes:
-        return json.dumps(self.payload(dashboard, task_key, task_alias), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    def encoded(
+        self,
+        dashboard: dict[str, Any],
+        task_key: str,
+        task_alias: str,
+        nfc_link: str = "",
+        refresh_now: bool = False,
+    ) -> bytes:
+        return json.dumps(
+            self.payload(dashboard, task_key, task_alias, nfc_link, refresh_now),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
 
     def validate(self, payload: dict[str, Any]) -> None:
         window = payload.get("windowData")
@@ -348,6 +368,8 @@ class CanvasClient:
         device_id: str,
         task_key: str = "",
         task_alias: str = "F1 看板",
+        nfc_link: str = "",
+        refresh_now: bool = False,
         *,
         http: HTTPClient | None = None,
         renderer: CanvasRenderer | None = None,
@@ -356,6 +378,8 @@ class CanvasClient:
         self.device_id = device_id
         self.preferred_task_key = task_key
         self.task_alias = task_alias
+        self.nfc_link = nfc_link
+        self.refresh_now = refresh_now
         self.http = http or HTTPClient()
         self.renderer = renderer or CanvasRenderer()
         self.resolved_task_key = ""
@@ -391,7 +415,13 @@ class CanvasClient:
             raise RuntimeError("缺少 QUOTE0_DEVICE_ID")
         url = f"https://dot.mindreset.tech/api/authV2/open/device/{quote(self.device_id, safe='')}/canvas"
         key = self._resolve_key()
-        body = self.renderer.encoded(dashboard, key, self.task_alias)
+        body = self.renderer.encoded(
+            dashboard,
+            key,
+            self.task_alias,
+            self.nfc_link,
+            self.refresh_now,
+        )
         try:
             self.http.request(url, method="POST", headers=self._headers(), body=body)
         except HTTPError as error:
@@ -399,7 +429,13 @@ class CanvasClient:
                 raise
             self.resolved_task_key = ""
             key = self._resolve_key(force=True)
-            body = self.renderer.encoded(dashboard, key, self.task_alias)
+            body = self.renderer.encoded(
+                dashboard,
+                key,
+                self.task_alias,
+                self.nfc_link,
+                self.refresh_now,
+            )
             try:
                 self.http.request(url, method="POST", headers=self._headers(), body=body)
             except HTTPError as retry_error:
