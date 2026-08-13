@@ -29,11 +29,19 @@ def main() -> int:
     print("F1 Quote/0 Python service starting", flush=True)
     print(f"Dashboards: {','.join(config.dashboards)}", flush=True)
     print(f"Push interval: {config.push_interval}s; data refresh: {config.data_refresh_interval}s", flush=True)
+    print(f"Canvas immediate refresh: {'enabled' if config.refresh_now else 'disabled'}", flush=True)
     if not config.configured:
         print("Waiting for DOT_API_KEY and QUOTE0_DEVICE_ID; F1 data checks remain active", flush=True)
 
     data = F1Data()
-    canvas = CanvasClient(config.api_key, config.device_id, config.task_key, config.task_alias)
+    canvas = CanvasClient(
+        config.api_key,
+        config.device_id,
+        config.task_key,
+        config.task_alias,
+        config.nfc_link,
+        config.refresh_now,
+    )
     next_refresh = 0.0
     next_push = 0.0
     cursor = 0
