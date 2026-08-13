@@ -4,7 +4,7 @@ services:
   f1-quote0:
     build:
       context: .
-    image: f1-quote0-docker:latest
+    image: furyth666/f1-quote0-docker:latest
     restart: unless-stopped
     init: true
     env_file:

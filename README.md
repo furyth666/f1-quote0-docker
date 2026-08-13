@@ -24,6 +24,27 @@
 
 ## 快速开始
 
+### 使用 Docker Hub 镜像
+
+已构建的 `linux/amd64` 镜像公开发布在 [Docker Hub](https://hub.docker.com/r/furyth666/f1-quote0-docker)：
+
+```sh
+docker pull furyth666/f1-quote0-docker:latest
+```
+
+下载仓库中的 `docker-compose.yml` 和 `.env.example`，复制并填写 `.env` 后即可启动，无需本地构建：
+
+```sh
+cp .env.example .env
+chmod 600 .env
+docker compose pull
+docker compose up -d --no-build
+```
+
+需要固定版本时，将 Compose 中的镜像标签由 `latest` 改为发布版本，例如 `1.2.0`。
+
+### 从源码构建
+
 ```sh
 git clone https://github.com/furyth666/f1-quote0-docker.git
 cd f1-quote0-docker
@@ -213,6 +234,16 @@ python -m unittest discover -s tests -v
 ```sh
 python scripts/validate_all_dashboards.py
 ```
+
+## 自动发布
+
+GitHub Actions 会在 `main` 分支每次更新后重新构建并推送 Docker Hub 镜像：
+
+- `latest`：当前 `main` 分支。
+- `sha-<提交号>`：可追溯到具体 Git 提交的不可混淆标签。
+- 推送形如 `v1.3.0` 的 Git 标签时，同时发布 `1.3.0` 和 `1.3`。
+
+工作流只读取 `DOCKERHUB_USERNAME` 与 `DOCKERHUB_TOKEN` 两个 GitHub Actions Secrets；Docker Hub 令牌不会进入代码、镜像层或构建日志。
 
 项目结构：
 
